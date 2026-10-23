@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Immutable, in-memory view of the catalog that every recommender scores against.
@@ -31,8 +32,14 @@ public final class CatalogSnapshot {
 	/** {@code x[i][g]} = 1 if movie i has genre g, else 0. */
 	private final double[][] genreRows;
 
+	/** idf_g = ln(N / n_g); 0 for a declared genre no movie has. */
+	private final double[] genreIdf;
+
 	/** Normalized tag → number of applications, per movie (used from ticket 04). */
 	private final List<SortedMap<String, Integer>> tagCounts;
+
+	/** Item vectors depend only on catalog content, so they are built once per configuration and shared. */
+	private final Map<VectorKey, double[][]> itemVectorCache = new ConcurrentHashMap<>();
 
 	private CatalogSnapshot(int[] movieIds, String[] titles, Integer[] years, int[] ratingCounts,
 			List<String> genreNames, double[][] genreRows, List<SortedMap<String, Integer>> tagCounts) {
@@ -48,6 +55,19 @@ public final class CatalogSnapshot {
 			max = Math.max(max, count);
 		}
 		this.maxRatingCount = max;
+
+		int N = movieIds.length;
+		int G = genreNames.size();
+		this.genreIdf = new double[G];
+		for (int g = 0; g < G; g++) {
+			int n = 0;
+			for (int i = 0; i < N; i++) {
+				if (genreRows[i][g] != 0) {
+					n++;
+				}
+			}
+			genreIdf[g] = n == 0 ? 0 : Math.log((double) N / n);
+		}
 	}
 
 	public static Builder builder() {
@@ -96,6 +116,11 @@ public final class CatalogSnapshot {
 		return List.copyOf(genres);
 	}
 
+	/** idf_g = ln(N / n_g) per genre, in catalog order. A copy: changing it does not change the snapshot. */
+	public double[] genreIdf() {
+		return genreIdf.clone();
+	}
+
 	int maxRatingCount() {
 		return maxRatingCount;
 	}
@@ -107,6 +132,41 @@ public final class CatalogSnapshot {
 
 	SortedMap<String, Integer> tagCounts(int idx) {
 		return tagCounts.get(idx);
+	}
+
+	/**
+	 * Item vectors v_i (ALGORITHMS.md §3), built on first use for each configuration and then reused:
+	 * <pre>
+	 *   g_i = useIdf ? x_i ⊙ idf : x_i
+	 *   ĝ_i = g_i / ‖g_i‖              (zero vector if the movie has no genres)
+	 * </pre>
+	 * Shared, not copied: engine code must not modify the result.
+	 */
+	double[][] itemVectors(boolean useIdf, double tagWeight) {
+		if (tagWeight != 0) {
+			throw new UnsupportedOperationException("Tag features arrive in ticket 04");
+		}
+		return itemVectorCache.computeIfAbsent(new VectorKey(useIdf, tagWeight), key -> genreBlock(key.useIdf()));
+	}
+
+	private double[][] genreBlock(boolean useIdf) {
+		int G = genreNames.size();
+		double[][] gHat = new double[movieIds.length][G];
+		for (int i = 0; i < movieIds.length; i++) {
+			for (int g = 0; g < G; g++) {
+				gHat[i][g] = useIdf ? genreRows[i][g] * genreIdf[g] : genreRows[i][g];
+			}
+			double norm = Vectors.norm(gHat[i]);
+			if (norm > 0) {
+				for (int g = 0; g < G; g++) {
+					gHat[i][g] = gHat[i][g] / norm;
+				}
+			}
+		}
+		return gHat;
+	}
+
+	private record VectorKey(boolean useIdf, double tagWeight) {
 	}
 
 	public static final class Builder {

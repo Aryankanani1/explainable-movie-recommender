@@ -62,7 +62,7 @@ class RecommendationServiceTest {
 
 		MathTrace trace = service.math("lecture", 3);
 
-		assertThat(trace.profile().T()).isEqualTo(60.0);
+		assertThat(trace.lecture().profile().T()).isEqualTo(60.0);
 		assertThat(trace.columns()).containsExactly("Comedy", "Adventure", "Super Hero", "Sci-Fi");
 	}
 

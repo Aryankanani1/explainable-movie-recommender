@@ -1,8 +1,5 @@
 package edu.fau.recsys.engine;
 
-import java.util.Arrays;
-import java.util.Map;
-
 /**
  * The lecture's user profile (ALGORITHMS.md §2), on raw grades and raw 0/1 genre rows:
  * <pre>
@@ -17,19 +14,9 @@ import java.util.Map;
 record LectureProfile(int[] graded, double[] r, double[] P, double T, double[] pHat) {
 
 	static LectureProfile of(CatalogSnapshot catalog, UserRatings user) {
-		int count = 0;
-		int[] gradedAll = new int[user.byMovieId().size()];
-		double[] rAll = new double[gradedAll.length];
-		for (Map.Entry<Integer, Double> rating : user.byMovieId().entrySet()) {
-			int i = catalog.indexOf(rating.getKey());
-			if (i >= 0) {
-				gradedAll[count] = i;
-				rAll[count] = rating.getValue();
-				count++;
-			}
-		}
-		int[] graded = Arrays.copyOf(gradedAll, count);
-		double[] r = Arrays.copyOf(rAll, count);
+		GradedMovies gradedMovies = GradedMovies.of(catalog, user);
+		int[] graded = gradedMovies.idx();
+		double[] r = gradedMovies.r();
 
 		double[][] x = catalog.genreRows();
 		int G = catalog.genreNames().size();

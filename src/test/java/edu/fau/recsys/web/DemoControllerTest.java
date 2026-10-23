@@ -32,8 +32,8 @@ class DemoControllerTest {
 				assertThat(score.doubleValue()).isCloseTo(0.3333, within(1e-4)));
 		json.extractingPath("$.recommendations.items[3].score").asNumber().satisfies(score ->
 				assertThat(score.doubleValue()).isZero());
-		json.extractingPath("$.math.profile.T").asNumber().satisfies(total ->
+		json.extractingPath("$.math.lecture.profile.T").asNumber().satisfies(total ->
 				assertThat(total.doubleValue()).isEqualTo(60.0));
-		json.extractingPath("$.math.profile.P").isEqualTo(List.of(18.0, 12.0, 20.0, 10.0, 0.0));
+		json.extractingPath("$.math.lecture.profile.P").isEqualTo(List.of(18.0, 12.0, 20.0, 10.0, 0.0));
 	}
 }

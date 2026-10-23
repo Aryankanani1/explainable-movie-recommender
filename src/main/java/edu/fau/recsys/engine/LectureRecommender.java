@@ -51,37 +51,17 @@ public final class LectureRecommender implements Recommender {
 		double[] pHat = profile.pHat();
 
 		// Columns: genres in the profile (P_g ≠ 0) plus every genre of a shown candidate, in catalog order.
-		int G = P.length;
-		boolean[] shown = new boolean[G];
-		for (int g = 0; g < G; g++) {
-			shown[g] = P[g] != 0;
+		boolean[] inProfile = new boolean[P.length];
+		for (int g = 0; g < P.length; g++) {
+			inProfile[g] = P[g] != 0;
 		}
-		for (Ranking.Scored candidate : top) {
-			for (int g = 0; g < G; g++) {
-				shown[g] = shown[g] || x[candidate.idx()][g] != 0;
-			}
-		}
-		int shownCount = 0;
-		for (int g = 0; g < G; g++) {
-			if (shown[g]) {
-				shownCount++;
-			}
-		}
-		int[] columns = new int[shownCount];
-		List<String> columnNames = new ArrayList<>();
-		int j = 0;
-		for (int g = 0; g < G; g++) {
-			if (shown[g]) {
-				columns[j++] = g;
-				columnNames.add(catalog.genreNames().get(g));
-			}
-		}
+		int[] columns = TraceColumns.select(catalog, inProfile, top);
 
 		List<MathTrace.GradedRow> rows = new ArrayList<>();
 		for (int n = 0; n < profile.graded().length; n++) {
 			int i = profile.graded()[n];
 			double r = profile.r()[n];
-			double[] xRow = pick(x[i], columns);
+			double[] xRow = TraceColumns.pick(x[i], columns);
 			double[] weighted = new double[columns.length];
 			for (int col = 0; col < columns.length; col++) {
 				weighted[col] = r * xRow[col];
@@ -96,12 +76,14 @@ public final class LectureRecommender implements Recommender {
 			for (int col = 0; col < columns.length; col++) {
 				contrib[col] = pHat[columns[col]] * x[c][columns[col]];
 			}
-			candidates.add(new MathTrace.CandidateRow(candidate.movieId(), catalog.title(c), pick(x[c], columns),
-					candidate.score(), candidate.score() * 10, contrib));
+			candidates.add(new MathTrace.CandidateRow(candidate.movieId(), catalog.title(c),
+					TraceColumns.pick(x[c], columns), candidate.score(), candidate.score() * 10, contrib));
 		}
 
-		MathTrace.Profile traceProfile = new MathTrace.Profile(pick(P, columns), profile.T(), pick(pHat, columns));
-		return new MathTrace(ID, Fallback.NONE, columnNames, rows, traceProfile, candidates);
+		MathTrace.Profile traceProfile = new MathTrace.Profile(TraceColumns.pick(P, columns), profile.T(),
+				TraceColumns.pick(pHat, columns));
+		return new MathTrace(ID, Fallback.NONE, TraceColumns.names(catalog, columns),
+				new MathTrace.Lecture(rows, traceProfile, candidates), null);
 	}
 
 	/** score(c) = Σ_g p̂_g · x_cg for every movie, then the shared candidate filter and order. */
@@ -141,13 +123,5 @@ public final class LectureRecommender implements Recommender {
 			influences.add(new RatedInfluence(catalog.movieId(i), catalog.title(i), r, influence));
 		}
 		return Explanations.of(contributions, influences, user.scale());
-	}
-
-	private static double[] pick(double[] full, int[] columns) {
-		double[] picked = new double[columns.length];
-		for (int j = 0; j < columns.length; j++) {
-			picked[j] = full[columns[j]];
-		}
-		return picked;
 	}
 }
