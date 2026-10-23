@@ -84,11 +84,41 @@ final class EvaluationData {
 				trainCounts.merge(rating.movieId(), 1, Integer::sum);
 			}
 		}
+		return snapshotWithCounts(trainCounts);
+	}
+
+	/** Catalog content with ratingCount from every rating, as the app has it. For examples, never for evaluation. */
+	CatalogSnapshot fullSnapshot() {
+		Map<Integer, Integer> counts = new TreeMap<>();
+		for (MovieLensRating rating : allRatings()) {
+			counts.merge(rating.movieId(), 1, Integer::sum);
+		}
+		return snapshotWithCounts(counts);
+	}
+
+	List<MovieLensMovie> movieList() {
+		return List.copyOf(movies);
+	}
+
+	TagCounts tagCounts() {
+		return tags;
+	}
+
+	/** Every rating, in userId order. */
+	List<MovieLensRating> allRatings() {
+		List<MovieLensRating> all = new ArrayList<>();
+		for (List<MovieLensRating> ratings : ratingsByUser.values()) {
+			all.addAll(ratings);
+		}
+		return all;
+	}
+
+	private CatalogSnapshot snapshotWithCounts(Map<Integer, Integer> ratingCounts) {
 		CatalogSnapshot.Builder builder = CatalogSnapshot.builder().genres(genreOrder);
 		for (MovieLensMovie movie : movies) {
 			builder.addMovie(movie.movieId(), movie.displayTitle(), movie.year(), movie.genres(),
 					tags.byMovie().getOrDefault(movie.movieId(), new TreeMap<>()),
-					trainCounts.getOrDefault(movie.movieId(), 0));
+					ratingCounts.getOrDefault(movie.movieId(), 0));
 		}
 		return builder.build();
 	}

@@ -49,9 +49,13 @@ final class MethodRegistry {
 
 	/** The same method, re-ranked by MMR with λ = {@value #MMR_LAMBDA} over the top {@value Evaluator#MMR_POOL}. */
 	static EvaluatedMethod diversified(EvaluatedMethod method) {
+		return diversified(method, MMR_LAMBDA);
+	}
+
+	static EvaluatedMethod diversified(EvaluatedMethod method, double lambda) {
 		return new EvaluatedMethod(method.id(),
-				method.definition() + String.format(Locale.ROOT, " + MMR(lambda=%s, pool=%d)", MMR_LAMBDA, Evaluator.MMR_POOL),
-				method.forUser(), MMR_LAMBDA);
+				method.definition() + String.format(Locale.ROOT, " + MMR(lambda=%s, pool=%d)", lambda, Evaluator.MMR_POOL),
+				method.forUser(), lambda);
 	}
 
 	static EvaluatedMethod contentBased(String id, ScoringConfig config) {
