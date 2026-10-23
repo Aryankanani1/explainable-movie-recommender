@@ -25,7 +25,7 @@ class RecommendationServiceTest {
 	private final GradeService gradeService = mock(GradeService.class);
 
 	private final RecsysProperties properties = new RecsysProperties(Path.of("data"), new RecsysProperties.Import(true),
-			new RecsysProperties.Recommend(2, 0.5));
+			new RecsysProperties.Recommend(2, 0.5, 100, 1));
 
 	private final RecommendationService service = new RecommendationService(catalogHolder, gradeService,
 			() -> new CurrentUser(7, "demo"), properties);
@@ -39,7 +39,7 @@ class RecommendationServiceTest {
 	void lectureRecommendationsCarryTitlesGenresAndExplanations() {
 		given(gradeService.scores(7)).willReturn(Map.of(1, 2.0, 2, 10.0, 3, 8.0));
 
-		RecommendationResultDto result = service.recommend("lecture", 10, 0);
+		RecommendationResultDto result = service.recommend("lecture", 10, 0, 1.0);
 
 		assertThat(result.fallback()).isEqualTo(Fallback.NONE);
 		assertThat(result.items()).extracting(RecommendationDto::title)
@@ -54,7 +54,7 @@ class RecommendationServiceTest {
 	void noGradesIsFlaggedAsPopularityFallback() {
 		given(gradeService.scores(7)).willReturn(Map.of());
 
-		RecommendationResultDto result = service.recommend("lecture", 3, 0);
+		RecommendationResultDto result = service.recommend("lecture", 3, 0, 1.0);
 
 		assertThat(result.fallback()).isEqualTo(Fallback.POPULARITY);
 		assertThat(result.items()).extracting(RecommendationDto::title)
@@ -75,7 +75,7 @@ class RecommendationServiceTest {
 	void improvedIsTheCenteredIdfContentBasedMethodWithTags() {
 		given(gradeService.scores(7)).willReturn(Map.of(1, 2.0, 2, 10.0, 3, 8.0));
 
-		RecommendationResultDto result = service.recommend("improved", 10, 0);
+		RecommendationResultDto result = service.recommend("improved", 10, 0, 1.0);
 		MathTrace trace = service.math("improved", 3);
 
 		assertThat(result.method()).isEqualTo("content-based");
@@ -92,12 +92,38 @@ class RecommendationServiceTest {
 	void kDefaultsToTheConfiguredValue() {
 		given(gradeService.scores(7)).willReturn(Map.of(1, 2.0, 2, 10.0, 3, 8.0));
 
-		assertThat(service.recommend("lecture", null, 0).items()).hasSize(2);
+		assertThat(service.recommend("lecture", null, 0, 1.0).items()).hasSize(2);
+	}
+
+	@Test
+	void fewerThanTheMinimumGradesShowsPopularFilmsFlaggedAsFallback() {
+		RecommendationService strict = new RecommendationService(catalogHolder, gradeService,
+				() -> new CurrentUser(7, "demo"), new RecsysProperties(Path.of("data"),
+						new RecsysProperties.Import(true), new RecsysProperties.Recommend(10, 0.5, 100, 5)));
+		given(gradeService.scores(7)).willReturn(Map.of(1, 2.0, 2, 10.0, 3, 8.0));
+
+		RecommendationResultDto result = strict.recommend("improved", 3, 0, 1.0);
+
+		assertThat(result.method()).isEqualTo("content-based");
+		assertThat(result.fallback()).isEqualTo(Fallback.POPULARITY);
+		// Popularity, but still never a graded film (Guardians, Captain America and Batman v Superman are graded).
+		assertThat(result.items()).extracting(RecommendationDto::title)
+			.containsExactly("Batman Begins", "Spider-Man", "The Hitchhiker's Guide to the Galaxy");
+	}
+
+	@Test
+	void lambdaBelowOneReranksForVariety() {
+		given(gradeService.scores(7)).willReturn(Map.of(1, 2.0, 2, 10.0, 3, 8.0));
+
+		RecommendationResultDto result = service.recommend("improved", 3, 0, 0.3);
+
+		assertThat(result.items()).extracting(RecommendationDto::title)
+			.containsExactly("Spider-Man", "Lady Bird", "The Hitchhiker's Guide to the Galaxy");
 	}
 
 	@Test
 	void unknownMethodIsRejectedBeforeAnyWork() {
-		assertThatThrownBy(() -> service.recommend("hybrid", 10, 0)).isInstanceOf(UnknownMethodException.class)
+		assertThatThrownBy(() -> service.recommend("hybrid", 10, 0, 1.0)).isInstanceOf(UnknownMethodException.class)
 			.hasMessageContaining("Supported: [lecture, improved]");
 	}
 }

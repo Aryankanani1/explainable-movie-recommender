@@ -6,8 +6,11 @@ import java.util.Locale;
 import edu.fau.recsys.catalog.CatalogSnapshotHolder;
 import edu.fau.recsys.engine.CatalogSnapshot;
 import edu.fau.recsys.engine.ContentBasedRecommender;
+import edu.fau.recsys.engine.Fallback;
 import edu.fau.recsys.engine.LectureRecommender;
 import edu.fau.recsys.engine.MathTrace;
+import edu.fau.recsys.engine.MmrReranker;
+import edu.fau.recsys.engine.PopularityRecommender;
 import edu.fau.recsys.engine.RatingScale;
 import edu.fau.recsys.engine.RecommendOptions;
 import edu.fau.recsys.engine.RecommendationResult;
@@ -40,7 +43,15 @@ class RecommendationService {
 
 	private final ContentBasedRecommender improved;
 
+	private final PopularityRecommender popularity = new PopularityRecommender();
+
+	private final MmrReranker mmr = new MmrReranker();
+
 	private final int defaultK;
+
+	private final int mmrPool;
+
+	private final int minGrades;
 
 	RecommendationService(CatalogSnapshotHolder catalogHolder, GradeService gradeService,
 			CurrentUserProvider currentUserProvider, RecsysProperties properties) {
@@ -49,20 +60,33 @@ class RecommendationService {
 		this.currentUserProvider = currentUserProvider;
 		this.improved = new ContentBasedRecommender(ScoringConfig.improved(properties.recommend().tagWeight()));
 		this.defaultK = properties.recommend().defaultK();
+		this.mmrPool = properties.recommend().mmrPool();
+		this.minGrades = properties.recommend().minGrades();
 	}
 
-	/** {@code k == null} means the configured {@code recsys.recommend.default-k}. */
-	RecommendationResultDto recommend(String method, Integer k, int minRatings) {
+	/**
+	 * {@code k == null} means the configured {@code recsys.recommend.default-k}; {@code lambda < 1} re-ranks the top
+	 * {@code mmr-pool} for variety (MMR). With fewer than {@code min-grades} grades the list is popular films,
+	 * flagged {@code POPULARITY}, so the UI can ask for more grades.
+	 */
+	RecommendationResultDto recommend(String method, Integer k, int minRatings, double lambda) {
 		Recommender recommender = recommender(method);
 		int listLength = k != null ? k : defaultK;
 		CatalogSnapshot catalog = catalogHolder.get();
 		UserRatings user = currentUserRatings();
+		RecommendOptions options = new RecommendOptions(listLength, minRatings, lambda, true);
 
 		long start = System.nanoTime();
-		RecommendationResult result = recommender.recommend(catalog, user,
-				new RecommendOptions(listLength, minRatings, 1.0, true));
+		RecommendationResult result;
+		if (user.byMovieId().size() < minGrades) {
+			RecommendationResult popular = mmr.diversify(popularity, catalog, user, options, mmrPool);
+			result = new RecommendationResult(recommender.id(), popular.items(), Fallback.POPULARITY);
+		}
+		else {
+			result = mmr.diversify(recommender, catalog, user, options, mmrPool);
+		}
 		double elapsedMs = (System.nanoTime() - start) / 1e6;
-		log.info("Recommended method={} k={} grades={} fallback={} in {} ms", method, listLength,
+		log.info("Recommended method={} k={} lambda={} grades={} fallback={} in {} ms", method, listLength, lambda,
 				user.byMovieId().size(), result.fallback(), String.format(Locale.ROOT, "%.1f", elapsedMs));
 
 		return RecommendationResultDto.from(result, catalog);

@@ -33,8 +33,11 @@ public record RecsysProperties(@NotNull Path dataDir, @Name("import") @DefaultVa
 	 * @param defaultK list length when {@code ?k=} is absent
 	 * @param tagWeight β, the weight of the tag block relative to the genre block in the improved method; 0 (genres
 	 * only) because the evaluation's validation search chose it
+	 * @param mmrPool how many top candidates MMR re-ranks when diversity is on
+	 * @param minGrades below this many grades, recommendations are popular films flagged as a fallback
 	 */
 	public record Recommend(@DefaultValue("10") @Min(1) @Max(100) int defaultK,
-			@DefaultValue("0.0") @PositiveOrZero double tagWeight) {
+			@DefaultValue("0.0") @PositiveOrZero double tagWeight, @DefaultValue("100") @Min(1) int mmrPool,
+			@DefaultValue("5") @Min(0) int minGrades) {
 	}
 }

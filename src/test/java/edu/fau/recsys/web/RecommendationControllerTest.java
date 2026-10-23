@@ -26,7 +26,7 @@ class RecommendationControllerTest {
 
 	@Test
 	void defaultsToTheLectureMethodAndLeavesKToTheConfiguredDefault() {
-		given(recommendationService.recommend("lecture", null, 0))
+		given(recommendationService.recommend("lecture", null, 0, 1.0))
 			.willReturn(new RecommendationResultDto("lecture", Fallback.POPULARITY, List.of()));
 
 		assertThat(mvc.get().uri("/api/me/recommendations")).hasStatusOk()
@@ -37,7 +37,7 @@ class RecommendationControllerTest {
 
 	@Test
 	void unknownMethodIsBadRequestProblemDetail() {
-		given(recommendationService.recommend("bogus", null, 0)).willThrow(new UnknownMethodException("bogus"));
+		given(recommendationService.recommend("bogus", null, 0, 1.0)).willThrow(new UnknownMethodException("bogus"));
 
 		assertThat(mvc.get().uri("/api/me/recommendations").param("method", "bogus"))
 			.hasStatus(HttpStatus.BAD_REQUEST)
@@ -54,5 +54,13 @@ class RecommendationControllerTest {
 			.bodyJson()
 			.extractingPath("$.detail")
 			.isEqualTo("k must be between 1 and 20");
+	}
+
+	@Test
+	void lambdaOutsideZeroToOneIsBadRequest() {
+		assertThat(mvc.get().uri("/api/me/recommendations").param("lambda", "1.5")).hasStatus(HttpStatus.BAD_REQUEST)
+			.bodyJson()
+			.extractingPath("$.detail")
+			.isEqualTo("lambda must be between 0 and 1");
 	}
 }
