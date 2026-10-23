@@ -1,9 +1,15 @@
 services:
   postgres:
-    image: 'postgres:latest'
+    image: 'postgres:17'
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      - 'POSTGRES_DB=recsys'
+      - 'POSTGRES_USER=recsys'
+      - 'POSTGRES_PASSWORD=recsys'
+    # Host port 5433: a native PostgreSQL already listens on 5432 on the dev machine.
     ports:
-      - '5432'
+      - '5433:5432'
+    volumes:
+      - 'pgdata:/var/lib/postgresql/data'
+
+volumes:
+  pgdata:

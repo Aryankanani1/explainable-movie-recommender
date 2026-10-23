@@ -1,3 +1,21 @@
 spring:
   application:
     name: movie-recommender
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 500
+        order_inserts: true
+        default_batch_fetch_size: 100
+  mvc:
+    problemdetails:
+      enabled: true
+
+recsys:
+  data-dir: data/ml-latest-small
+  import:
+    enabled: true
