@@ -1,6 +1,15 @@
+server:
+  # Hosts such as Render tell the app which port to listen on.
+  port: ${PORT:8080}
+
 spring:
   application:
     name: movie-recommender
+  docker:
+    compose:
+      start:
+        # compose.yaml also defines the app container; a dev run only needs the database.
+        arguments: postgres
   jpa:
     open-in-view: false
     hibernate:

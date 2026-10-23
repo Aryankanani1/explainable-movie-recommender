@@ -1,0 +1,10 @@
+.git
+.idea
+.vscode
+target
+docs
+report-assets
+results
+scripts
+HELP.md
+*.iml

@@ -1,3 +1,5 @@
+# `docker compose up --build` runs the full stack (app on http://localhost:8080).
+# `./mvnw spring-boot:run` starts only the postgres service (see spring.docker.compose in application.yaml).
 services:
   postgres:
     image: 'postgres:17'
@@ -10,6 +12,25 @@ services:
       - '5433:5432'
     volumes:
       - 'pgdata:/var/lib/postgresql/data'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U recsys -d recsys']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/recsys'
+      - 'SPRING_DATASOURCE_USERNAME=recsys'
+      - 'SPRING_DATASOURCE_PASSWORD=recsys'
+      # Local only: the demo / demo account. A public deployment sets this to false.
+      - 'RECSYS_DEMO_USER_ENABLED=true'
+    ports:
+      - '8080:8080'
 
 volumes:
   pgdata:
