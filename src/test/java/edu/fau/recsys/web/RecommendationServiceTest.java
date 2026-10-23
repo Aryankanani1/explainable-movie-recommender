@@ -25,7 +25,7 @@ class RecommendationServiceTest {
 	private final GradeService gradeService = mock(GradeService.class);
 
 	private final RecsysProperties properties = new RecsysProperties(Path.of("data"), new RecsysProperties.Import(true),
-			new RecsysProperties.Recommend(2, 0.0));
+			new RecsysProperties.Recommend(2, 0.5));
 
 	private final RecommendationService service = new RecommendationService(catalogHolder, gradeService,
 			() -> new CurrentUser(7, "demo"), properties);
@@ -72,7 +72,7 @@ class RecommendationServiceTest {
 	}
 
 	@Test
-	void improvedIsTheCenteredIdfContentBasedMethod() {
+	void improvedIsTheCenteredIdfContentBasedMethodWithTags() {
 		given(gradeService.scores(7)).willReturn(Map.of(1, 2.0, 2, 10.0, 3, 8.0));
 
 		RecommendationResultDto result = service.recommend("improved", 10, 0);
@@ -81,6 +81,9 @@ class RecommendationServiceTest {
 		assertThat(result.method()).isEqualTo("content-based");
 		assertThat(result.items()).extracting(RecommendationDto::title)
 			.containsExactly("Spider-Man", "The Hitchhiker's Guide to the Galaxy", "Lady Bird", "Batman Begins");
+		assertThat(result.items().get(0).explanation().sentence())
+			.isEqualTo("Matches your taste for Comedy and \"marvel\"; you rated Guardians of the Galaxy 10/10.");
+		assertThat(trace.contentBased().config().tagWeight()).isEqualTo(0.5);
 		assertThat(trace.contentBased().config().centerRatings()).isTrue();
 		assertThat(trace.contentBased().config().useIdf()).isTrue();
 	}

@@ -39,8 +39,9 @@ class CatalogSnapshotFactory {
 		long start = System.nanoTime();
 		CatalogSnapshot snapshot = load();
 		holder.set(snapshot);
-		log.info("Catalog snapshot built: {} movies, {} genres in {} ms", snapshot.size(), snapshot.genreNames().size(),
-				(System.nanoTime() - start) / 1_000_000);
+		log.info("Catalog snapshot built: {} movies, {} genres, {} vocabulary tags on {} movies in {} ms",
+				snapshot.size(), snapshot.genreNames().size(), snapshot.tagVocabulary().size(),
+				snapshot.moviesWithVocabularyTag(), (System.nanoTime() - start) / 1_000_000);
 	}
 
 	CatalogSnapshot load() {
