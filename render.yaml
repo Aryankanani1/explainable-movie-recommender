@@ -1,0 +1,24 @@
+# Render Blueprint (New → Blueprint → this repository). Render builds the Dockerfile and asks once for the three
+# database values below; they are stored in Render's dashboard, never in this repository.
+services:
+  - type: web
+    name: explainable-movie-recommender
+    runtime: docker
+    plan: free
+    # Same area as the Neon database (AWS us-east-1), so the first-boot import doesn't cross the country.
+    region: virginia
+    autoDeployTrigger: commit
+    envVars:
+      # From Neon's connection details: jdbc:postgresql://<host>/<database>?sslmode=require
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      # No shared demo / demo account on a public site; visitors register.
+      - key: RECSYS_DEMO_USER_ENABLED
+        value: 'false'
+      # Render terminates HTTPS in front of the app; honour its X-Forwarded-* headers (secure cookies, real scheme).
+      - key: SERVER_FORWARD_HEADERS_STRATEGY
+        value: native
