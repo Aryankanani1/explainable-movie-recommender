@@ -4,10 +4,12 @@ import java.util.List;
 
 import edu.fau.recsys.catalog.GenreCount;
 import edu.fau.recsys.catalog.MovieCatalog;
+import edu.fau.recsys.infra.SecurityConfig;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
@@ -15,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 @WebMvcTest(GenreController.class)
+@Import(SecurityConfig.class)
 class GenreControllerTest {
 
 	@Autowired

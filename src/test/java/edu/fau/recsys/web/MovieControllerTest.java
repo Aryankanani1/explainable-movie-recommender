@@ -7,10 +7,12 @@ import java.util.Optional;
 import edu.fau.recsys.catalog.MovieCatalog;
 import edu.fau.recsys.catalog.MovieDetail;
 import edu.fau.recsys.catalog.MovieSummary;
+import edu.fau.recsys.infra.SecurityConfig;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @WebMvcTest(MovieController.class)
+@Import(SecurityConfig.class)
 class MovieControllerTest {
 
 	@Autowired

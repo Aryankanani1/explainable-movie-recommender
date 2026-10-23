@@ -29,3 +29,6 @@ recsys:
     mmr-pool: 100
     # Fewer grades than this: recommendations are popular films, flagged as a fallback.
     min-grades: 5
+  # Dev only: a demo / demo account so the app can be tried without registering. Off unless set.
+  demo-user:
+    enabled: true

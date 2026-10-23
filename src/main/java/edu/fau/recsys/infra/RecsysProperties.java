@@ -19,11 +19,16 @@ import org.springframework.validation.annotation.Validated;
  * @param dataDir folder with the MovieLens CSVs ({@code recsys.data-dir})
  * @param importSettings {@code recsys.import.*}; {@code import} is a Java keyword, hence the rename
  * @param recommend {@code recsys.recommend.*}
+ * @param demoUser {@code recsys.demo-user.*}
  */
 @Validated
 @ConfigurationProperties("recsys")
 public record RecsysProperties(@NotNull Path dataDir, @Name("import") @DefaultValue Import importSettings,
-		@Valid @DefaultValue Recommend recommend) {
+		@Valid @DefaultValue Recommend recommend, @DefaultValue DemoUser demoUser) {
+
+	/** @param enabled seed a {@code demo} / {@code demo} account at startup; for local development only */
+	public record DemoUser(@DefaultValue("false") boolean enabled) {
+	}
 
 	/** @param enabled import MovieLens on startup when the catalog is empty */
 	public record Import(@DefaultValue("true") boolean enabled) {

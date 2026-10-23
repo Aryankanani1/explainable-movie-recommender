@@ -8,6 +8,7 @@ import edu.fau.recsys.grading.CurrentUserProvider;
 import edu.fau.recsys.grading.GradeService;
 import edu.fau.recsys.grading.GradeView;
 import edu.fau.recsys.grading.UnknownMovieException;
+import edu.fau.recsys.infra.SecurityConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,8 +17,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
@@ -25,8 +29,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 @WebMvcTest(GradeController.class)
+@Import(SecurityConfig.class)
+@WithMockUser("demo")
 class GradeControllerTest {
 
 	private static final long ME = 7;
@@ -95,11 +102,29 @@ class GradeControllerTest {
 
 	@Test
 	void deleteIsNoContent() {
-		assertThat(mvc.delete().uri("/api/me/grades/2571")).hasStatus(HttpStatus.NO_CONTENT);
+		assertThat(mvc.delete().uri("/api/me/grades/2571").with(csrf())).hasStatus(HttpStatus.NO_CONTENT);
 		verify(gradeService).delete(ME, 2571);
 	}
 
+	@Test
+	@WithAnonymousUser
+	void signedOutUsersGetAProblemDetail401() {
+		assertThat(mvc.get().uri("/api/me/grades")).hasStatus(HttpStatus.UNAUTHORIZED)
+			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+			.bodyJson()
+			.extractingPath("$.detail")
+			.isEqualTo("Sign in to keep and use your own grades.");
+		verifyNoInteractions(gradeService);
+	}
+
+	@Test
+	void writesWithoutACsrfTokenAreForbidden() {
+		assertThat(mvc.put().uri("/api/me/grades/2571").contentType(MediaType.APPLICATION_JSON).content("{\"score\": 9}"))
+			.hasStatus(HttpStatus.FORBIDDEN);
+		verifyNoInteractions(gradeService);
+	}
+
 	private MockMvcTester.MockMvcRequestBuilder put(int movieId, String body) {
-		return mvc.put().uri("/api/me/grades/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON).content(body);
+		return mvc.put().uri("/api/me/grades/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON).content(body).with(csrf());
 	}
 }

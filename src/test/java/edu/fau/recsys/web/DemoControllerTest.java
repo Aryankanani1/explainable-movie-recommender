@@ -2,10 +2,12 @@ package edu.fau.recsys.web;
 
 import java.util.List;
 
+import edu.fau.recsys.infra.SecurityConfig;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,6 +15,7 @@ import static org.assertj.core.api.Assertions.within;
 
 /** Acceptance: GET /api/demo/lecture-example returns 0.6667 / 0.6333 / 0.3333 / 0. */
 @WebMvcTest(DemoController.class)
+@Import(SecurityConfig.class)
 class DemoControllerTest {
 
 	@Autowired

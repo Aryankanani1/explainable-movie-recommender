@@ -5,6 +5,7 @@ import java.util.List;
 
 import edu.fau.recsys.catalog.CatalogNotReadyException;
 import edu.fau.recsys.grading.UnknownMovieException;
+import edu.fau.recsys.grading.UsernameTakenException;
 
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +34,11 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler
 	ProblemDetail unknownMovie(UnknownMovieException ex) {
 		return problem(HttpStatus.NOT_FOUND, "Movie not found", ex.getMessage());
+	}
+
+	@ExceptionHandler
+	ProblemDetail usernameTaken(UsernameTakenException ex) {
+		return problem(HttpStatus.CONFLICT, "Username taken", ex.getMessage());
 	}
 
 	@ExceptionHandler

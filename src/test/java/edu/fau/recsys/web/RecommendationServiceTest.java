@@ -25,7 +25,7 @@ class RecommendationServiceTest {
 	private final GradeService gradeService = mock(GradeService.class);
 
 	private final RecsysProperties properties = new RecsysProperties(Path.of("data"), new RecsysProperties.Import(true),
-			new RecsysProperties.Recommend(2, 0.5, 100, 1));
+			new RecsysProperties.Recommend(2, 0.5, 100, 1), new RecsysProperties.DemoUser(false));
 
 	private final RecommendationService service = new RecommendationService(catalogHolder, gradeService,
 			() -> new CurrentUser(7, "demo"), properties);
@@ -99,7 +99,8 @@ class RecommendationServiceTest {
 	void fewerThanTheMinimumGradesShowsPopularFilmsFlaggedAsFallback() {
 		RecommendationService strict = new RecommendationService(catalogHolder, gradeService,
 				() -> new CurrentUser(7, "demo"), new RecsysProperties(Path.of("data"),
-						new RecsysProperties.Import(true), new RecsysProperties.Recommend(10, 0.5, 100, 5)));
+						new RecsysProperties.Import(true), new RecsysProperties.Recommend(10, 0.5, 100, 5),
+						new RecsysProperties.DemoUser(false)));
 		given(gradeService.scores(7)).willReturn(Map.of(1, 2.0, 2, 10.0, 3, 8.0));
 
 		RecommendationResultDto result = strict.recommend("improved", 3, 0, 1.0);
