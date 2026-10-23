@@ -26,6 +26,12 @@ jobs:
       # The ticket's "docker compose up from a clean clone", on a clean clone.
       - run: docker compose up --build --detach --wait
       - run: node scripts/smoke-test.mjs http://localhost:8080
+      - name: Memory within the 512 MB limit
+        run: |
+          id=$(docker compose ps -q app)
+          echo "OOM-killed: $(docker inspect -f '{{.State.OOMKilled}}' "$id"), restarts: $(docker inspect -f '{{.RestartCount}}' "$id")"
+          echo "peak: $(docker exec "$id" cat /sys/fs/cgroup/memory.peak) bytes, limit: $(docker exec "$id" cat /sys/fs/cgroup/memory.max)"
+          test "$(docker inspect -f '{{.State.OOMKilled}}' "$id")" = false
       - name: App logs
         if: always()
         run: docker compose logs app
