@@ -1,0 +1,39 @@
+{
+  "seed": 42,
+  "k": 10,
+  "relevanceThreshold": 4.0,
+  "split": "per user: sort by movieId, shuffle with new Random(42 + userId), first floor(0.8 n) train",
+  "validation": "last 10% of each user's train split; counts from the remaining 90%",
+  "users": 610,
+  "movies": 9742,
+  "ratings": 100836,
+  "methods": {
+    "random": "RandomRecommender(42 + userId)",
+    "popularity": "PopularityRecommender (train counts)",
+    "lecture": "LectureRecommender",
+    "cb-cosine": "ScoringConfig(center=false, idf=false, tagWeight=0.0, prior=0.0)",
+    "cb-centered": "ScoringConfig(center=true, idf=false, tagWeight=0.0, prior=0.0)",
+    "cb-idf": "ScoringConfig(center=true, idf=true, tagWeight=0.0, prior=0.0)",
+    "cb-tags": "ScoringConfig(center=true, idf=true, tagWeight=0.5, prior=0.0)",
+    "cb-tags-pop": "ScoringConfig(center=true, idf=true, tagWeight=0.5, prior=0.1)",
+    "cb-tags-tuned": "ScoringConfig(center=true, idf=true, tagWeight=0.0, prior=0.0)"
+  },
+  "betaGrid": [0.0, 0.1, 0.25, 0.5, 0.75, 1.0],
+  "betaValidationNdcg": [0.013451136523434968, 0.007407988075543722, 0.007634879033753186, 0.007585808546821788, 0.008427910766072765, 0.009392055318272372],
+  "betaChosen": 0.0,
+  "bootstrapResamples": 1000,
+  "gitCommit": "e7bf7f2",
+  "timestamp": "2026-10-23T14:15:45.465469Z",
+  "runtimeMs": {
+    "random": 1804,
+    "popularity": 932,
+    "lecture": 1439,
+    "cb-cosine": 2365,
+    "cb-centered": 1693,
+    "cb-idf": 1417,
+    "cb-tags": 1573,
+    "cb-tags-tuned": 1474,
+    "cb-tags-pop": 1454
+  },
+  "totalRuntimeMs": 23084
+}
