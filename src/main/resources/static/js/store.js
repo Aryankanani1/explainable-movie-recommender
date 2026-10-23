@@ -17,14 +17,27 @@ export const store = {
 	/** movieId → { movieId, title, year, score, updatedAt } */
 	grades: new Map(),
 
+	/** The signed-in username, or null when signed out. */
+	user: null,
+
 	/** Settles once the first load has finished (or failed), so views can tell "no grades" from "not loaded yet". */
 	ready: null,
 
 	load() {
-		this.ready = api.grades().then((list) => {
-			this.grades = new Map(list.map((g) => [g.movieId, g]));
-			emit();
-		});
+		this.ready = api.me()
+			.then(async (me) => {
+				this.user = me.username;
+				const list = await api.grades();
+				this.grades = new Map(list.map((g) => [g.movieId, g]));
+			})
+			.catch((error) => {
+				if (error.status !== 401) {
+					throw error;
+				}
+				this.user = null;
+				this.grades = new Map();
+			})
+			.finally(emit);
 		return this.ready;
 	},
 

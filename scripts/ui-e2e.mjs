@@ -5,8 +5,9 @@
 //                                           if 8080 is taken)
 //   node scripts/ui-e2e.mjs http://localhost:8080 docs/screenshots
 //
-// Needs Node 22+ (built-in WebSocket) and Google Chrome. WARNING: it deletes the current user's grades and grades six
-// films instead (The Matrix, Toy Story, Pulp Fiction, Inception, Titanic, The Notebook).
+// Needs Node 22+ (built-in WebSocket), Google Chrome, and the demo account (recsys.demo-user.enabled=true, the dev
+// default). WARNING: it signs in as demo, deletes demo's grades and grades six films instead (The Matrix, Toy Story,
+// Pulp Fiction, Inception, Titanic, The Notebook).
 import { spawn } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -63,7 +64,7 @@ async function go(hash) {
 }
 async function shot(name, fullHeight = 2000) {
 	if (!SHOTS) return;
-	await js(`(document.getElementById('toasts').replaceChildren(), true)`);
+	await js(`(document.getElementById('toasts')?.replaceChildren(), true)`);
 	await js('document.fonts.ready.then(() => true)');
 	await sleep(700);
 	const { cssContentSize } = await send('Page.getLayoutMetrics');
@@ -80,8 +81,32 @@ try {
 	await send('Runtime.enable');
 	await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
 
+	// Signed out: personal views ask you to sign in; the lecture example still works.
+	await send('Page.navigate', { url: `${BASE}/#recommendations` });
+	await waitFor(`window.recsys && document.querySelector('.empty h3, .programme')`);
+	const signedOutPrompt = await js(`document.querySelector('.empty h3')?.textContent ?? ''`);
+	if (signedOutPrompt === '') {
+		await js(`recsys.api.signOut().then(() => location.reload(), () => location.reload())`);
+		await waitFor(`window.recsys && document.querySelector('.empty h3')`);
+	}
+	check('signed out: recommendations ask you to sign in', (await js(`document.querySelector('.empty h3').textContent`)) === 'Sign in to grade films');
+	await go('#example');
+	await waitFor(`document.querySelector('[aria-label="Lecture example results"]')`);
+	check('signed out: the lecture example is public', true);
+
+	// Sign in through the real form (Spring Security form login, CSRF cookie echoed as a header).
+	await send('Page.navigate', { url: `${BASE}/login.html?next=${encodeURIComponent('/#grade')}` });
+	await waitFor(`document.getElementById('sign-in') && document.cookie.includes('XSRF-TOKEN')`);
+	await shot('6-sign-in', 1100);
+	await js(`(() => { const f = document.getElementById('sign-in'); f.username.value = 'wrong'; f.password.value = 'nope'; f.requestSubmit(); return true; })()`);
+	await waitFor(`!document.querySelector('#sign-in .auth__error').hidden`);
+	check('a wrong password shows a readable error', (await js(`document.querySelector('#sign-in .auth__error').textContent`)) === 'Wrong username or password.');
+	await js(`(() => { const f = document.getElementById('sign-in'); f.username.value = 'demo'; f.password.value = 'demo'; f.requestSubmit(); return true; })()`);
+	await waitFor(`location.pathname === '/' && location.hash === '#grade'`);
+	await waitFor(`document.getElementById('session')?.textContent.includes('demo')`);
+	check('signed in as demo through the form', true, await js(`document.getElementById('session').textContent`));
+
 	// Start from no grades, through the same API the UI uses.
-	await send('Page.navigate', { url: `${BASE}/#grade` });
 	await waitFor(`window.recsys && document.querySelectorAll('.film').length > 0`);
 	await js(`(async () => { for (const g of await recsys.api.grades()) await recsys.store.remove(g.movieId); return true; })()`);
 	await waitFor(`document.querySelector('.ledger__count')?.textContent === '0'`);
@@ -210,6 +235,13 @@ try {
 	await waitFor(`document.querySelectorAll('.film').length > 0`);
 	const gradeOverflow = await js(`document.documentElement.scrollWidth - document.documentElement.clientWidth`);
 	check('phone width: grade view fits', gradeOverflow <= 0, `overflow ${gradeOverflow}px`);
+
+	// Sign out: back to the sign-in page, and the API refuses "my" data again.
+	await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+	await js(`[...document.querySelectorAll('#session button')].find(b => b.textContent === 'Sign out').click()`);
+	await waitFor(`location.pathname === '/login.html'`);
+	const afterSignOut = await js(`fetch('/api/me/grades').then(r => r.status)`);
+	check('after signing out, /api/me/grades is 401', afterSignOut === 401);
 } catch (error) {
 	check('script error', false, error.message);
 } finally {

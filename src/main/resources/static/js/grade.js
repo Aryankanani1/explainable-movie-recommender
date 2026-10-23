@@ -170,7 +170,7 @@ export function renderGrade(root) {
 
 	const unsubscribe = store.subscribe(renderLedger);
 	renderLedger();
-	(store.ready ?? Promise.resolve()).finally(() => search('', 0));
+	(store.ready ?? Promise.resolve()).catch(() => {}).then(() => search('', 0));
 	return () => {
 		unsubscribe();
 		clearTimeout(timer);

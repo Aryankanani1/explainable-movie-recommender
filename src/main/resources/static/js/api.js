@@ -10,14 +10,16 @@ export class ApiError extends Error {
 }
 
 function xsrfToken() {
-	// Ticket 08 adds Spring Security with a cookie-based CSRF token; sending it now costs nothing.
+	// Spring Security sets this cookie on every response; writes must echo it back as the X-XSRF-TOKEN header.
 	const cookie = document.cookie.split('; ').find((c) => c.startsWith('XSRF-TOKEN='));
 	return cookie ? decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) : null;
 }
 
-async function request(path, { method = 'GET', body } = {}) {
+async function request(path, { method = 'GET', body, form } = {}) {
 	const headers = { Accept: 'application/json' };
-	if (body !== undefined) {
+	if (form !== undefined) {
+		headers['Content-Type'] = 'application/x-www-form-urlencoded';
+	} else if (body !== undefined) {
 		headers['Content-Type'] = 'application/json';
 	}
 	const token = xsrfToken();
@@ -28,7 +30,7 @@ async function request(path, { method = 'GET', body } = {}) {
 		method,
 		headers,
 		credentials: 'same-origin',
-		body: body === undefined ? undefined : JSON.stringify(body),
+		body: form !== undefined ? new URLSearchParams(form) : body === undefined ? undefined : JSON.stringify(body),
 	});
 	if (response.status === 204) {
 		return null;
@@ -54,4 +56,8 @@ export const api = {
 	starterSet: (size = 15) => request(`/api/onboarding/starter-set?${query({ size })}`),
 	math: (method, k) => request(`/api/me/recommendations/math?${query({ method, k })}`),
 	lectureExample: () => request('/api/demo/lecture-example'),
+	me: () => request('/api/me'),
+	register: (username, password) => request('/api/auth/register', { method: 'POST', body: { username, password } }),
+	signIn: (username, password) => request('/login', { method: 'POST', form: { username, password } }),
+	signOut: () => request('/logout', { method: 'POST' }),
 };

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Sign in · The Recommender</title>
+	<meta name="description" content="Sign in or create an account to keep your own grades and recommendations.">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..800&family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+	<link rel="stylesheet" href="css/app.css">
+	<script type="module" src="js/login.js"></script>
+</head>
+<body>
+	<header class="masthead masthead--compact">
+		<div class="masthead__inner">
+			<p class="masthead__kicker">FAU · Recommender Systems · Fall 2026</p>
+			<h1 class="masthead__title"><a href="/">The <em>Recommender</em></a></h1>
+		</div>
+	</header>
+
+	<main class="view" id="view">
+		<section class="view-head">
+			<p class="eyebrow">Your seat</p>
+			<h2 class="view-title">Sign in to keep <em>your grades</em></h2>
+			<p class="lede">Grades and recommendations are personal, so they need an account; creating one takes a few
+				seconds. The lecture example works without one.</p>
+		</section>
+
+		<div class="auth">
+			<form class="auth__card" id="sign-in" novalidate>
+				<h3 class="auth__title">Sign in</h3>
+				<label class="field"><span class="field__label">Username</span>
+					<input class="input" name="username" autocomplete="username" required></label>
+				<label class="field"><span class="field__label">Password</span>
+					<input class="input" name="password" type="password" autocomplete="current-password" required></label>
+				<p class="auth__error" role="alert" hidden></p>
+				<button class="button button--primary" type="submit">Sign in</button>
+				<p class="auth__hint">Trying a local copy? Sign in as <b>demo</b> / <b>demo</b>.</p>
+			</form>
+
+			<form class="auth__card" id="register" novalidate>
+				<h3 class="auth__title">New here? Create an account</h3>
+				<label class="field"><span class="field__label">Username</span>
+					<input class="input" name="username" autocomplete="username" required
+						placeholder="3–30 letters, digits, . _ -"></label>
+				<label class="field"><span class="field__label">Password</span>
+					<input class="input" name="password" type="password" autocomplete="new-password" required
+						placeholder="at least 8 characters"></label>
+				<p class="auth__error" role="alert" hidden></p>
+				<button class="button" type="submit">Create account and sign in</button>
+			</form>
+		</div>
+
+		<p class="note"><a href="/#example">Or see the lecture example without signing in →</a></p>
+	</main>
+
+	<footer class="colophon">
+		<p>Passwords are stored only as BCrypt hashes. Data: MovieLens <i>ml-latest-small</i>, F. Maxwell Harper &amp;
+			Joseph A. Konstan (2015).</p>
+	</footer>
+</body>
+</html>
