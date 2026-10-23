@@ -14,6 +14,10 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  jackson:
+    deserialization:
+      # Grades are whole numbers; without this, {"score": 8.5} is silently stored as 8.
+      accept-float-as-int: false
 
 recsys:
   data-dir: data/ml-latest-small
