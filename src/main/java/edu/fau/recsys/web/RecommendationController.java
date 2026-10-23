@@ -20,10 +20,13 @@ class RecommendationController {
 		this.recommendationService = recommendationService;
 	}
 
-	/** Ranked unseen movies with explanations; {@code fallback: "POPULARITY"} when there is nothing to go on. */
+	/**
+	 * Ranked unseen movies; {@code method} is "lecture" or "improved", {@code k} defaults to
+	 * {@code recsys.recommend.default-k}. {@code fallback: "POPULARITY"} when there is nothing to go on.
+	 */
 	@GetMapping
 	RecommendationResultDto recommend(@RequestParam(defaultValue = "lecture") String method,
-			@RequestParam(defaultValue = "10") @Min(1) @Max(100) int k,
+			@RequestParam(required = false) @Min(1) @Max(100) Integer k,
 			@RequestParam(defaultValue = "0") @PositiveOrZero int minRatings) {
 		return recommendationService.recommend(method, k, minRatings);
 	}

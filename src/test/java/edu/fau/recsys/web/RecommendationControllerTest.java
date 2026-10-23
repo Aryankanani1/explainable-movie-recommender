@@ -25,8 +25,8 @@ class RecommendationControllerTest {
 	RecommendationService recommendationService;
 
 	@Test
-	void defaultsToTheLectureMethodWithTenItems() {
-		given(recommendationService.recommend("lecture", 10, 0))
+	void defaultsToTheLectureMethodAndLeavesKToTheConfiguredDefault() {
+		given(recommendationService.recommend("lecture", null, 0))
 			.willReturn(new RecommendationResultDto("lecture", Fallback.POPULARITY, List.of()));
 
 		assertThat(mvc.get().uri("/api/me/recommendations")).hasStatusOk()
@@ -37,7 +37,7 @@ class RecommendationControllerTest {
 
 	@Test
 	void unknownMethodIsBadRequestProblemDetail() {
-		given(recommendationService.recommend("bogus", 10, 0)).willThrow(new UnknownMethodException("bogus"));
+		given(recommendationService.recommend("bogus", null, 0)).willThrow(new UnknownMethodException("bogus"));
 
 		assertThat(mvc.get().uri("/api/me/recommendations").param("method", "bogus"))
 			.hasStatus(HttpStatus.BAD_REQUEST)

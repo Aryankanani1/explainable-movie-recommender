@@ -1,5 +1,6 @@
 package edu.fau.recsys.web;
 
+import java.nio.file.Path;
 import java.util.Map;
 
 import edu.fau.recsys.catalog.CatalogSnapshotHolder;
@@ -8,6 +9,7 @@ import edu.fau.recsys.engine.LectureFixture;
 import edu.fau.recsys.engine.MathTrace;
 import edu.fau.recsys.grading.CurrentUser;
 import edu.fau.recsys.grading.GradeService;
+import edu.fau.recsys.infra.RecsysProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,8 +24,11 @@ class RecommendationServiceTest {
 
 	private final GradeService gradeService = mock(GradeService.class);
 
+	private final RecsysProperties properties = new RecsysProperties(Path.of("data"), new RecsysProperties.Import(true),
+			new RecsysProperties.Recommend(2, 0.0));
+
 	private final RecommendationService service = new RecommendationService(catalogHolder, gradeService,
-			() -> new CurrentUser(7, "demo"));
+			() -> new CurrentUser(7, "demo"), properties);
 
 	@BeforeEach
 	void fixtureCatalog() {
@@ -67,8 +72,29 @@ class RecommendationServiceTest {
 	}
 
 	@Test
+	void improvedIsTheCenteredIdfContentBasedMethod() {
+		given(gradeService.scores(7)).willReturn(Map.of(1, 2.0, 2, 10.0, 3, 8.0));
+
+		RecommendationResultDto result = service.recommend("improved", 10, 0);
+		MathTrace trace = service.math("improved", 3);
+
+		assertThat(result.method()).isEqualTo("content-based");
+		assertThat(result.items()).extracting(RecommendationDto::title)
+			.containsExactly("Spider-Man", "The Hitchhiker's Guide to the Galaxy", "Lady Bird", "Batman Begins");
+		assertThat(trace.contentBased().config().centerRatings()).isTrue();
+		assertThat(trace.contentBased().config().useIdf()).isTrue();
+	}
+
+	@Test
+	void kDefaultsToTheConfiguredValue() {
+		given(gradeService.scores(7)).willReturn(Map.of(1, 2.0, 2, 10.0, 3, 8.0));
+
+		assertThat(service.recommend("lecture", null, 0).items()).hasSize(2);
+	}
+
+	@Test
 	void unknownMethodIsRejectedBeforeAnyWork() {
-		assertThatThrownBy(() -> service.recommend("improved", 10, 0)).isInstanceOf(UnknownMethodException.class)
-			.hasMessageContaining("Supported: [lecture]");
+		assertThatThrownBy(() -> service.recommend("hybrid", 10, 0)).isInstanceOf(UnknownMethodException.class)
+			.hasMessageContaining("Supported: [lecture, improved]");
 	}
 }

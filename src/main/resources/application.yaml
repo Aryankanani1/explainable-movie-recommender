@@ -23,3 +23,7 @@ recsys:
   data-dir: data/ml-latest-small
   import:
     enabled: true
+  recommend:
+    default-k: 10
+    # β for the improved method's tag block; 0 until ticket 04 adds tag features (then 0.5).
+    tag-weight: 0.0
