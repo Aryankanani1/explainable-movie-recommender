@@ -1,2 +1,4 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+# Keep the MovieLens files byte-identical to the GroupLens download (they use CRLF).
+data/** -text
