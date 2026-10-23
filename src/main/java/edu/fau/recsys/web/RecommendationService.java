@@ -1,7 +1,6 @@
 package edu.fau.recsys.web;
 
 import java.util.List;
-import java.util.Locale;
 
 import edu.fau.recsys.catalog.CatalogSnapshotHolder;
 import edu.fau.recsys.engine.CatalogSnapshot;
@@ -19,9 +18,8 @@ import edu.fau.recsys.engine.ScoringConfig;
 import edu.fau.recsys.engine.UserRatings;
 import edu.fau.recsys.grading.CurrentUserProvider;
 import edu.fau.recsys.grading.GradeService;
+import edu.fau.recsys.infra.LogLatency;
 import edu.fau.recsys.infra.RecsysProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.stereotype.Service;
 
@@ -30,8 +28,6 @@ import org.springframework.stereotype.Service;
 class RecommendationService {
 
 	static final List<String> SUPPORTED_METHODS = List.of("lecture", "improved");
-
-	private static final Logger log = LoggerFactory.getLogger(RecommendationService.class);
 
 	private final CatalogSnapshotHolder catalogHolder;
 
@@ -69,14 +65,14 @@ class RecommendationService {
 	 * {@code mmr-pool} for variety (MMR). With fewer than {@code min-grades} grades the list is popular films,
 	 * flagged {@code POPULARITY}, so the UI can ask for more grades.
 	 */
-	RecommendationResultDto recommend(String method, Integer k, int minRatings, double lambda) {
+	@LogLatency
+	public RecommendationResultDto recommend(String method, Integer k, int minRatings, double lambda) {
 		Recommender recommender = recommender(method);
 		int listLength = k != null ? k : defaultK;
 		CatalogSnapshot catalog = catalogHolder.get();
 		UserRatings user = currentUserRatings();
 		RecommendOptions options = new RecommendOptions(listLength, minRatings, lambda, true);
 
-		long start = System.nanoTime();
 		RecommendationResult result;
 		if (user.byMovieId().size() < minGrades) {
 			RecommendationResult popular = mmr.diversify(popularity, catalog, user, options, mmrPool);
@@ -85,14 +81,11 @@ class RecommendationService {
 		else {
 			result = mmr.diversify(recommender, catalog, user, options, mmrPool);
 		}
-		double elapsedMs = (System.nanoTime() - start) / 1e6;
-		log.info("Recommended method={} k={} lambda={} grades={} fallback={} in {} ms", method, listLength, lambda,
-				user.byMovieId().size(), result.fallback(), String.format(Locale.ROOT, "%.1f", elapsedMs));
-
-		return RecommendationResultDto.from(result, catalog);
+		return RecommendationResultDto.from(result, catalog, user.byMovieId().size());
 	}
 
-	MathTrace math(String method, int k) {
+	@LogLatency
+	public MathTrace math(String method, int k) {
 		Recommender recommender = recommender(method);
 		CatalogSnapshot catalog = catalogHolder.get();
 		UserRatings user = currentUserRatings();

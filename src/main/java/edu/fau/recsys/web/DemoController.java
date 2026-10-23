@@ -25,7 +25,7 @@ class DemoController {
 		int allCandidates = fixture.size() - grades.byMovieId().size();
 		RecommendationResult result = lecture.recommend(fixture, grades,
 				new RecommendOptions(allCandidates, 0, 1.0, true));
-		return new LectureExampleDto(RecommendationResultDto.from(result, fixture),
+		return new LectureExampleDto(RecommendationResultDto.from(result, fixture, grades.byMovieId().size()),
 				lecture.trace(fixture, grades, allCandidates));
 	}
 

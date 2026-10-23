@@ -32,7 +32,7 @@ class RecommendationControllerTest {
 	@Test
 	void defaultsToTheLectureMethodAndLeavesKToTheConfiguredDefault() {
 		given(recommendationService.recommend("lecture", null, 0, 1.0))
-			.willReturn(new RecommendationResultDto("lecture", Fallback.POPULARITY, List.of()));
+			.willReturn(new RecommendationResultDto("lecture", Fallback.POPULARITY, 0, List.of()));
 
 		assertThat(mvc.get().uri("/api/me/recommendations")).hasStatusOk()
 			.bodyJson()
