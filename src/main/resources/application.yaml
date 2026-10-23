@@ -11,9 +11,6 @@ spring:
           batch_size: 500
         order_inserts: true
         default_batch_fetch_size: 100
-  mvc:
-    problemdetails:
-      enabled: true
   jackson:
     deserialization:
       # Grades are whole numbers; without this, {"score": 8.5} is silently stored as 8.

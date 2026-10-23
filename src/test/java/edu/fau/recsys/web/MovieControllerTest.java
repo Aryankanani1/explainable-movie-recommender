@@ -2,8 +2,10 @@ package edu.fau.recsys.web;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import edu.fau.recsys.catalog.MovieCatalog;
+import edu.fau.recsys.catalog.MovieDetail;
 import edu.fau.recsys.catalog.MovieSummary;
 import org.junit.jupiter.api.Test;
 
@@ -48,13 +50,46 @@ class MovieControllerTest {
 	@Test
 	void rejectsOutOfRangePageSizeWithProblemDetail() {
 		assertThat(mvc.get().uri("/api/movies").param("size", "0")).hasStatus(HttpStatus.BAD_REQUEST)
-			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+			.bodyJson()
+			.extractingPath("$.detail")
+			.isEqualTo("size must be between 1 and 100");
 		verifyNoInteractions(movieCatalog);
 	}
 
 	@Test
 	void rejectsNegativePageWithProblemDetail() {
 		assertThat(mvc.get().uri("/api/movies").param("page", "-1")).hasStatus(HttpStatus.BAD_REQUEST)
-			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+			.bodyJson()
+			.extractingPath("$.detail")
+			.isEqualTo("page must be 0 or more");
+	}
+
+	@Test
+	void detailHasGenresTopTagsAndRatingStats() {
+		given(movieCatalog.detail(2571)).willReturn(Optional.of(new MovieDetail(2571, "The Matrix", 1999,
+				List.of("Action", "Sci-Fi", "Thriller"),
+				List.of(new MovieDetail.TagCount("philosophy", 3), new MovieDetail.TagCount("dystopia", 2)), 278,
+				new BigDecimal("4.19"))));
+
+		var json = assertThat(mvc.get().uri("/api/movies/2571")).hasStatusOk().bodyJson();
+
+		json.extractingPath("$.title").isEqualTo("The Matrix");
+		json.extractingPath("$.genres").isEqualTo(List.of("Action", "Sci-Fi", "Thriller"));
+		json.extractingPath("$.topTags[0].tag").isEqualTo("philosophy");
+		json.extractingPath("$.topTags[0].count").isEqualTo(3);
+		json.extractingPath("$.ratingCount").isEqualTo(278);
+	}
+
+	@Test
+	void unknownMovieDetailIsNotFoundProblemDetail() {
+		given(movieCatalog.detail(999999)).willReturn(Optional.empty());
+
+		assertThat(mvc.get().uri("/api/movies/999999")).hasStatus(HttpStatus.NOT_FOUND)
+			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+			.bodyJson()
+			.extractingPath("$.detail")
+			.isEqualTo("No movie with id 999999");
 	}
 }

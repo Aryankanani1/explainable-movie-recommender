@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/me/recommendations")
 class RecommendationController {
 
+	private static final String K_RANGE = "must be between 1 and 100";
+
+	private static final String MATH_K_RANGE = "must be between 1 and 20";
+
 	private final RecommendationService recommendationService;
 
 	RecommendationController(RecommendationService recommendationService) {
@@ -26,15 +30,17 @@ class RecommendationController {
 	 */
 	@GetMapping
 	RecommendationResultDto recommend(@RequestParam(defaultValue = "lecture") String method,
-			@RequestParam(required = false) @Min(1) @Max(100) Integer k,
-			@RequestParam(defaultValue = "0") @PositiveOrZero int minRatings) {
+			@RequestParam(required = false) @Min(value = 1, message = K_RANGE) @Max(value = 100,
+					message = K_RANGE) Integer k,
+			@RequestParam(defaultValue = "0") @PositiveOrZero(message = "must be 0 or more") int minRatings) {
 		return recommendationService.recommend(method, k, minRatings);
 	}
 
 	/** The slides' matrices for the current grades and the top {@code k} candidates. */
 	@GetMapping("/math")
 	MathTrace math(@RequestParam(defaultValue = "lecture") String method,
-			@RequestParam(defaultValue = "5") @Min(1) @Max(20) int k) {
+			@RequestParam(defaultValue = "5") @Min(value = 1, message = MATH_K_RANGE) @Max(value = 20,
+					message = MATH_K_RANGE) int k) {
 		return recommendationService.math(method, k);
 	}
 }

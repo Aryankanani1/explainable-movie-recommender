@@ -11,6 +11,7 @@ import edu.fau.recsys.grading.UnknownMovieException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,18 @@ class GradeControllerTest {
 	void rejectsAnythingButAWholeGradeFromOneToTen(String body) {
 		assertThat(put(2571, body)).hasStatus(HttpStatus.BAD_REQUEST).hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
 		verifyNoInteractions(gradeService);
+	}
+
+	@ParameterizedTest(name = "{0} → {1}")
+	@CsvSource(delimiter = '|', textBlock = """
+			{"score": 0}       | score must be a whole number from 1 to 10
+			{"score": 11}      | score must be a whole number from 1 to 10
+			{}                 | score is required
+			{"score": "nine"}  | Malformed request body, or a value of the wrong type.
+			{"score": 8.5}     | Malformed request body, or a value of the wrong type.
+			""")
+	void badGradesGetAReadableDetail(String body, String detail) {
+		assertThat(put(2571, body)).bodyJson().extractingPath("$.detail").isEqualTo(detail);
 	}
 
 	@Test

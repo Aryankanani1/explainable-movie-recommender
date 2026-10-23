@@ -46,7 +46,13 @@ class RecommendationControllerTest {
 
 	@Test
 	void kOutOfRangeIsBadRequest() {
-		assertThat(mvc.get().uri("/api/me/recommendations").param("k", "0")).hasStatus(HttpStatus.BAD_REQUEST);
-		assertThat(mvc.get().uri("/api/me/recommendations/math").param("k", "21")).hasStatus(HttpStatus.BAD_REQUEST);
+		assertThat(mvc.get().uri("/api/me/recommendations").param("k", "0")).hasStatus(HttpStatus.BAD_REQUEST)
+			.bodyJson()
+			.extractingPath("$.detail")
+			.isEqualTo("k must be between 1 and 100");
+		assertThat(mvc.get().uri("/api/me/recommendations/math").param("k", "21")).hasStatus(HttpStatus.BAD_REQUEST)
+			.bodyJson()
+			.extractingPath("$.detail")
+			.isEqualTo("k must be between 1 and 20");
 	}
 }
