@@ -14,7 +14,6 @@ import static edu.fau.recsys.engine.LectureFixture.LADY_BIRD;
 import static edu.fau.recsys.engine.LectureFixture.SPIDER_MAN;
 import static edu.fau.recsys.engine.LectureRecommenderTest.assertRanking;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 /** Golden values G3, G4 and G5 from ALGORITHMS.md §10, plus the §4 edge cases. */
@@ -124,18 +123,19 @@ class ContentBasedRecommenderTest {
 		RecommendationResult onlyGenreless = recommender.recommend(withGenreless, grades(Map.of(2, 9.0)),
 				RecommendOptions.defaults());
 
-		assertThat(withGenreless.itemVectors(true, 0)[1]).containsOnly(0.0);
+		assertThat(withGenreless.itemVectors(true, 0).dense(1)).containsOnly(0.0);
 		assertRanking(result, 3, 1.0, 2, 0.0);
 		assertThat(onlyGenreless.fallback()).isEqualTo(Fallback.POPULARITY);
 	}
 
 	@Test
 	void itemVectorsAreBuiltOncePerConfig() {
-		double[][] first = catalog.itemVectors(true, 0);
+		ItemVectors first = catalog.itemVectors(true, 0);
 
 		assertThat(catalog.itemVectors(true, 0)).isSameAs(first);
 		assertThat(catalog.itemVectors(false, 0)).isNotSameAs(first);
-		assertThat(first[catalog.indexOf(GUARDIANS)]).containsExactly(new double[] { 0.3397, 0.5143, 0.2043, 0.7605, 0 },
+		assertThat(catalog.itemVectors(true, 0.5)).isNotSameAs(first);
+		assertThat(first.dense(catalog.indexOf(GUARDIANS))).containsExactly(new double[] { 0.3397, 0.5143, 0.2043, 0.7605, 0 },
 				within(TOLERANCE));
 	}
 
@@ -155,19 +155,6 @@ class ContentBasedRecommenderTest {
 				.orElseThrow();
 			assertThat(sameMovie.score()).isCloseTo(item.score() + prior, within(1e-9));
 		}
-	}
-
-	@Test
-	void tagFeaturesAreRejectedUntilTicket04() {
-		assertThatThrownBy(() -> new ContentBasedRecommender(ScoringConfig.improved(0.5)))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("ticket 04");
-	}
-
-	@Test
-	void explanationsArriveInTicket04() {
-		assertThat(recommend(G5, LectureFixture.defaultGrades()).items()).extracting(Recommendation::explanation)
-			.containsOnlyNulls();
 	}
 
 	private ContentProfile profile(ScoringConfig config, UserRatings user) {

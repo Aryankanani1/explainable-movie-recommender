@@ -19,7 +19,7 @@ record ContentProfile(int[] graded, double[] r, double rBar, double[] w, double[
 	/** ‖p‖ below this means there is no direction to score against. */
 	static final double ZERO_PROFILE = 1e-12;
 
-	static ContentProfile of(CatalogSnapshot catalog, UserRatings user, ScoringConfig config, double[][] v) {
+	static ContentProfile of(CatalogSnapshot catalog, UserRatings user, ScoringConfig config, ItemVectors v) {
 		GradedMovies gradedMovies = GradedMovies.of(catalog, user);
 		int[] graded = gradedMovies.idx();
 		double[] r = gradedMovies.r();
@@ -45,13 +45,9 @@ record ContentProfile(int[] graded, double[] r, double rBar, double[] w, double[
 			}
 		}
 
-		int dimensions = v.length == 0 ? 0 : v[0].length;
-		double[] p = new double[dimensions];
+		double[] p = new double[v.dimensions()];
 		for (int n = 0; n < graded.length; n++) {
-			int i = graded[n];
-			for (int d = 0; d < dimensions; d++) {
-				p[d] += w[n] * v[i][d];
-			}
+			v.addTo(p, graded[n], w[n]);
 		}
 		return new ContentProfile(graded, r, rBar, w, p);
 	}

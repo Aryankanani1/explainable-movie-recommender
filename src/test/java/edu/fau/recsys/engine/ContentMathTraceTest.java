@@ -77,6 +77,27 @@ class ContentMathTraceTest {
 	}
 
 	@Test
+	void g5tTraceSummarizesTheTagWeightsAndSplitsEachCosine() {
+		MathTrace withTags = new ContentBasedRecommender(ScoringConfig.improved(0.5)).trace(LectureFixture.catalog(),
+				LectureFixture.defaultGrades(), 3);
+		MathTrace.ContentBased content = withTags.contentBased();
+
+		assertThat(content.topTags()).extracting(MathTrace.TagWeight::tag).containsExactly("dc", "marvel", "space");
+		assertThat(content.topTags().get(0).weight()).isCloseTo(-2.3333, within(TOLERANCE));
+		assertThat(content.topTags().get(1).weight()).isCloseTo(1.7374, within(TOLERANCE));
+		MathTrace.ContentCandidate spiderMan = content.candidates().get(0);
+		assertThat(spiderMan.movieId()).isEqualTo(SPIDER_MAN);
+		assertThat(spiderMan.genrePart()).isCloseTo(0.2950, within(TOLERANCE));
+		assertThat(spiderMan.tagPart()).isCloseTo(0.1450, within(TOLERANCE));
+		assertThat(spiderMan.score()).isCloseTo(0.4401, within(TOLERANCE));
+	}
+
+	@Test
+	void genresOnlyTraceHasNoTagWeights() {
+		assertThat(trace.contentBased().topTags()).isEmpty();
+	}
+
+	@Test
 	void noGradesGivesAnEmptyTraceFlaggedAsFallback() {
 		MathTrace empty = improved.trace(LectureFixture.catalog(), new UserRatings(Map.of(), LectureFixture.SCALE), 5);
 

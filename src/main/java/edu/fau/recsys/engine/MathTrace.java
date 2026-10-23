@@ -44,15 +44,21 @@ public record MathTrace(String method, Fallback fallback, List<String> columns, 
 
 	/**
 	 * The improved method's tables. {@code idf} is null when the config does not use IDF; {@code p} is the genre
-	 * part of the profile.
+	 * part of the profile; {@code topTags} summarizes the tag part (the 5 largest |p_t|) instead of drawing hundreds
+	 * of tag columns.
 	 */
 	public record ContentBased(ScoringConfig config, double rBar, double[] idf, List<ContentRow> rows, double[] p,
-			List<ContentCandidate> candidates) {
+			List<TagWeight> topTags, List<ContentCandidate> candidates) {
 
 		public ContentBased {
 			rows = List.copyOf(rows);
+			topTags = List.copyOf(topTags);
 			candidates = List.copyOf(candidates);
 		}
+	}
+
+	/** One tag's weight p_t in the user's profile; negative means the user's low grades carry this tag. */
+	public record TagWeight(String tag, double weight) {
 	}
 
 	/** A graded movie: grade r_i, weight w_i (r_i − r̄ when centered), genre row x_i, ĝ_i and w_i·ĝ_i. */
