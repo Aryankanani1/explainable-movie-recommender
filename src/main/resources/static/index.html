@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>The Recommender · a content-based screening programme</title>
+	<meta name="description" content="Grade the films you know; a content-based recommender builds your taste from their genres and shows its working.">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..800&family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+	<link rel="stylesheet" href="css/app.css">
+	<script type="module" src="js/main.js"></script>
+</head>
+<body>
+	<header class="masthead">
+		<div class="masthead__inner">
+			<p class="masthead__kicker">FAU · Recommender Systems · Fall 2026</p>
+			<h1 class="masthead__title"><a href="#grade">The <em>Recommender</em></a></h1>
+			<p class="masthead__sub">A content-based screening programme. Grade the films you know; it builds your taste
+				from their genres, recommends what you haven't seen, and shows its working.</p>
+		</div>
+		<nav class="tabs" aria-label="Views">
+			<a class="tab" href="#grade" data-view="grade"><span class="tab__no">01</span><span>Grade</span><span class="tab__badge" id="grade-count" hidden></span></a>
+			<a class="tab" href="#recommendations" data-view="recommendations"><span class="tab__no">02</span><span>Recommendations</span></a>
+			<a class="tab" href="#math" data-view="math"><span class="tab__no">03</span><span>Show the math</span></a>
+			<a class="tab" href="#example" data-view="example"><span class="tab__no">04</span><span>Lecture example</span></a>
+		</nav>
+	</header>
+
+	<main id="view" class="view" tabindex="-1"></main>
+
+	<footer class="colophon">
+		<p>Data: MovieLens <i>ml-latest-small</i>, F. Maxwell Harper &amp; Joseph A. Konstan (2015), ACM TiiS 5(4).
+			Used for education; not endorsed by the University of Minnesota or GroupLens.</p>
+	</footer>
+
+	<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+</body>
+</html>
