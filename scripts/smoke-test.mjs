@@ -35,14 +35,14 @@ async function call(method, path, { json, form } = {}) {
 	return { status: response.status, body: isJson && text ? JSON.parse(text) : text };
 }
 
-// Retries while the host wakes up (connection errors, 502/503) or the catalog is still loading (503).
-async function until(method, path, seconds) {
+// Retries while the host wakes up (connection errors, 502/503) or the catalog is still loading (503, or `ready` false).
+async function until(method, path, seconds, ready = () => true) {
 	const deadline = Date.now() + seconds * 1000;
 	let last = 'no response';
 	while (Date.now() < deadline) {
 		try {
 			const res = await call(method, path);
-			if (res.status !== 502 && res.status !== 503 && res.status !== 504) return res;
+			if (res.status !== 502 && res.status !== 503 && res.status !== 504 && ready(res)) return res;
 			last = `HTTP ${res.status}`;
 		} catch (e) {
 			last = e.cause?.code ?? e.message;
@@ -53,9 +53,10 @@ async function until(method, path, seconds) {
 }
 
 console.log(`Smoke test against ${BASE}`);
-const genres = await until('GET', '/api/genres', 240);
+// The web server is up before the first-boot import has finished; until then the genre list is empty.
+const genres = await until('GET', '/api/genres', 240, (res) => res.status !== 200 || res.body.length > 0);
 check('the app answers and lists genres', genres.status === 200 && genres.body.length > 0, `HTTP ${genres.status}`);
-if (genres.status !== 200) process.exit(1);
+if (genres.status !== 200 || genres.body.length === 0) process.exit(1);
 
 const lecture = await call('GET', '/api/demo/lecture-example');
 check('the lecture example is served', lecture.status === 200, `HTTP ${lecture.status}`);
