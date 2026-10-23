@@ -4,7 +4,7 @@
 
 A content-based movie recommender built with Java and Spring Boot on the MovieLens dataset. You grade movies you know; it builds a taste profile from their genres and tags, recommends films you haven't seen, and explains each pick. It can also show the full matrix calculation behind a recommendation.
 
-**Live demo:** _coming soon_ (free hosting: the first visit after a quiet spell takes about a minute to wake the app).
+**Live demo:** https://explainable-movie-recommender.onrender.com (register an account to grade films; free hosting, so the first visit after a quiet spell takes a minute or two to wake the app).
 
 > Course project for Recommender Systems, Florida Atlantic University (Prof. Borko Furht), Fall 2026.
 
