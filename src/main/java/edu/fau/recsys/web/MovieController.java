@@ -1,6 +1,6 @@
 package edu.fau.recsys.web;
 
-import edu.fau.recsys.catalog.MovieSearch;
+import edu.fau.recsys.catalog.MovieCatalog;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/movies")
 class MovieController {
 
-	private final MovieSearch movieSearch;
+	private final MovieCatalog movieCatalog;
 
-	MovieController(MovieSearch movieSearch) {
-		this.movieSearch = movieSearch;
+	MovieController(MovieCatalog movieCatalog) {
+		this.movieCatalog = movieCatalog;
 	}
 
 	/** Searches display titles (case-insensitive contains), most-rated first. Invalid paging → 400 ProblemDetail. */
@@ -26,6 +26,6 @@ class MovieController {
 	PagedModel<MovieSummaryDto> search(@RequestParam(defaultValue = "") String q,
 			@RequestParam(defaultValue = "0") @PositiveOrZero int page,
 			@RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-		return new PagedModel<>(movieSearch.search(q, page, size).map(MovieSummaryDto::from));
+		return new PagedModel<>(movieCatalog.search(q, page, size).map(MovieSummaryDto::from));
 	}
 }

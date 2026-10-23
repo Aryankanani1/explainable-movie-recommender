@@ -3,7 +3,7 @@ package edu.fau.recsys.web;
 import java.math.BigDecimal;
 import java.util.List;
 
-import edu.fau.recsys.catalog.MovieSearch;
+import edu.fau.recsys.catalog.MovieCatalog;
 import edu.fau.recsys.catalog.MovieSummary;
 import org.junit.jupiter.api.Test;
 
@@ -27,13 +27,13 @@ class MovieControllerTest {
 	MockMvcTester mvc;
 
 	@MockitoBean
-	MovieSearch movieSearch;
+	MovieCatalog movieCatalog;
 
 	@Test
 	void returnsPagedSummariesWithStableJsonShape() {
 		MovieSummary matrix = new MovieSummary(2571, "The Matrix", 1999, List.of("Action", "Sci-Fi", "Thriller"), 278,
 				new BigDecimal("4.19"));
-		given(movieSearch.search("matrix", 0, 20)).willReturn(new PageImpl<>(List.of(matrix), PageRequest.of(0, 20), 1));
+		given(movieCatalog.search("matrix", 0, 20)).willReturn(new PageImpl<>(List.of(matrix), PageRequest.of(0, 20), 1));
 
 		var response = assertThat(mvc.get().uri("/api/movies").param("q", "matrix")).hasStatusOk().bodyJson();
 
@@ -49,7 +49,7 @@ class MovieControllerTest {
 	void rejectsOutOfRangePageSizeWithProblemDetail() {
 		assertThat(mvc.get().uri("/api/movies").param("size", "0")).hasStatus(HttpStatus.BAD_REQUEST)
 			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
-		verifyNoInteractions(movieSearch);
+		verifyNoInteractions(movieCatalog);
 	}
 
 	@Test
