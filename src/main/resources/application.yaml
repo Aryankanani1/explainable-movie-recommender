@@ -25,5 +25,6 @@ recsys:
     enabled: true
   recommend:
     default-k: 10
-    # β: how much the tag block counts relative to the genre block in the improved method.
-    tag-weight: 0.5
+    # β: how much the tag block counts relative to the genre block in the improved method. 0 = genres only:
+    # the offline evaluation's validation search chose β = 0 (tags at 0.5 lowered NDCG@10; see results/metrics.md).
+    tag-weight: 0.0

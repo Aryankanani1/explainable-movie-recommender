@@ -31,9 +31,10 @@ public record RecsysProperties(@NotNull Path dataDir, @Name("import") @DefaultVa
 
 	/**
 	 * @param defaultK list length when {@code ?k=} is absent
-	 * @param tagWeight β, the weight of the tag block relative to the genre block in the improved method
+	 * @param tagWeight β, the weight of the tag block relative to the genre block in the improved method; 0 (genres
+	 * only) because the evaluation's validation search chose it
 	 */
 	public record Recommend(@DefaultValue("10") @Min(1) @Max(100) int defaultK,
-			@DefaultValue("0.5") @PositiveOrZero double tagWeight) {
+			@DefaultValue("0.0") @PositiveOrZero double tagWeight) {
 	}
 }
