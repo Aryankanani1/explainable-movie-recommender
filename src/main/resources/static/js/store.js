@@ -10,14 +10,22 @@ function emit() {
 	}
 }
 
+/** Below this many grades the server answers with popular films (recsys.recommend.min-grades). */
+export const MIN_GRADES = 5;
+
 export const store = {
 	/** movieId → { movieId, title, year, score, updatedAt } */
 	grades: new Map(),
 
-	async load() {
-		const list = await api.grades();
-		this.grades = new Map(list.map((g) => [g.movieId, g]));
-		emit();
+	/** Settles once the first load has finished (or failed), so views can tell "no grades" from "not loaded yet". */
+	ready: null,
+
+	load() {
+		this.ready = api.grades().then((list) => {
+			this.grades = new Map(list.map((g) => [g.movieId, g]));
+			emit();
+		});
+		return this.ready;
 	},
 
 	async grade(movieId, score) {

@@ -50,7 +50,8 @@ export const api = {
 	grades: () => request('/api/me/grades'),
 	putGrade: (movieId, score) => request(`/api/me/grades/${movieId}`, { method: 'PUT', body: { score } }),
 	deleteGrade: (movieId) => request(`/api/me/grades/${movieId}`, { method: 'DELETE' }),
-	recommendations: (method, k) => request(`/api/me/recommendations?${query({ method, k })}`),
+	recommendations: (method, k, lambda = 1) => request(`/api/me/recommendations?${query({ method, k, lambda })}`),
+	starterSet: (size = 15) => request(`/api/onboarding/starter-set?${query({ size })}`),
 	math: (method, k) => request(`/api/me/recommendations/math?${query({ method, k })}`),
 	lectureExample: () => request('/api/demo/lecture-example'),
 };

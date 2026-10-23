@@ -85,18 +85,36 @@ try {
 	await waitFor(`window.recsys && document.querySelectorAll('.film').length > 0`);
 	await js(`(async () => { for (const g of await recsys.api.grades()) await recsys.store.remove(g.movieId); return true; })()`);
 	await waitFor(`document.querySelector('.ledger__count')?.textContent === '0'`);
-	check('grade view lists the most-rated films before any search', await js(`document.querySelectorAll('.film').length`) >= 10);
+
+	// Onboarding: with no grades, the grade view opens on the starter set.
+	await send('Page.reload');
+	await waitFor(`document.querySelector('.results__meta')?.textContent.startsWith('New here?')`);
+	const starter = await js(`[...document.querySelectorAll('.film')].map(c => [...c.querySelectorAll('.chip')].map(x => x.textContent))`);
+	const starterGenres = new Set(starter.flat());
+	check('new users see a 15-film starter set', starter.length === 15, await js(`document.querySelector('.results__meta').textContent`));
+	check('the starter set covers at least 12 genres', starterGenres.size >= 12, `${starterGenres.size} genres`);
+	await shot('0-onboarding-starter-set', 1700);
 
 	// Grade 6 films by typing in the search box and clicking a grade button, like a person.
 	const persona = [['matrix', 'The Matrix', 9], ['toy story', 'Toy Story', 8], ['pulp fiction', 'Pulp Fiction', 10],
 		['inception', 'Inception', 9], ['titanic', 'Titanic', 3], ['notebook', 'The Notebook', 2]];
-	for (const [query, title, score] of persona) {
+	const gradeFilms = async (films) => { for (const [query, title, score] of films) {
 		await js(`(() => { const i = document.getElementById('movie-search'); i.value = ${JSON.stringify(query)}; i.dispatchEvent(new Event('input')); return true; })()`);
 		const card = `[...document.querySelectorAll('.film')].find(c => c.querySelector('.film__title').firstChild.textContent.trim() === ${JSON.stringify(title)})`;
 		await waitFor(card);
 		await js(`${card}.querySelector('[data-score="${score}"]').click()`);
 		await waitFor(`${card}.querySelector('[data-score="${score}"]').getAttribute('aria-pressed') === 'true'`);
-	}
+	} };
+
+	// Three grades are not enough: recommendations stay popular films, with the banner saying how many are missing.
+	await gradeFilms(persona.slice(0, 3));
+	await go('#recommendations');
+	await waitFor(`document.querySelector('.programme')`);
+	const banner = await js(`document.querySelector('.banner')?.textContent ?? ''`);
+	check('with 3 grades the fallback banner asks for more', banner.includes('graded 3 of the 5'), banner.slice(0, 90));
+	await go('#grade');
+	await waitFor(`document.getElementById('movie-search')`);
+	await gradeFilms(persona.slice(3));
 	await waitFor(`document.querySelector('.ledger__count').textContent === '6'`);
 	check('graded 6 films through the UI', true, (await js(`[...document.querySelectorAll('.ledger__item')].map(li => li.querySelector('.ledger__name').title + ' ' + li.querySelector('.ledger__score').textContent).join(', ')`)));
 	check('tab badge shows 6', (await js(`document.getElementById('grade-count').textContent`)) === '6');
@@ -125,6 +143,21 @@ try {
 		await js(`document.querySelector('.entry__because')?.textContent`));
 	check('no fallback banner with 6 grades', !(await js(`!!document.querySelector('.banner')`)));
 	await shot('2-recommendations', 1900);
+
+	// Diversity: λ = 0.3 re-ranks the same pool for variety.
+	const genresInList = `new Set([...document.querySelectorAll('.programme .entry')].flatMap(e => [...e.querySelectorAll('.entry__body > .chips:first-of-type .chip')].map(c => c.textContent))).size`;
+	const focusedGenres = await js(genresInList);
+	await js(`(() => { const s = document.getElementById('diversity'); s.value = '0.7'; s.dispatchEvent(new Event('input')); s.dispatchEvent(new Event('change')); return true; })()`);
+	await waitFor(`document.querySelector('.mmr-note')`);
+	const diverse = await js(listTitles);
+	const diverseGenres = await js(genresInList);
+	check('diversity slider re-ranks the list', JSON.stringify(diverse) !== JSON.stringify(improved),
+		`${diverse.filter((t) => !improved.includes(t)).length} of 10 new; first: ${diverse.slice(0, 3).join(' | ')}`);
+	check('the diverse list spans more genres', diverseGenres > focusedGenres, `${focusedGenres} → ${diverseGenres} genres`);
+	check('slider label shows λ', (await js(`document.getElementById('diversity-value').textContent`)).startsWith('λ = 0.3'));
+	await shot('2b-recommendations-diverse', 1900);
+	await js(`(() => { const s = document.getElementById('diversity'); s.value = '0'; s.dispatchEvent(new Event('change')); return true; })()`);
+	await waitFor(`!document.querySelector('.mmr-note')`);
 
 	// Show the math (lecture): the rendered P row and scores match the API exactly.
 	await go('#math');

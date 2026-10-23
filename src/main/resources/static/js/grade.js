@@ -1,7 +1,7 @@
 // View 1 · Grade: search MovieLens titles, grade 1–10, keep a ledger of what you graded.
 
 import { api } from './api.js';
-import { store } from './store.js';
+import { MIN_GRADES, store } from './store.js';
 import { empty, genreChips, grade as gradeText, h, loading, reveal, showError, toast } from './ui.js';
 
 const PAGE_SIZE = 12;
@@ -49,6 +49,10 @@ export function renderGrade(root) {
 			results.replaceChildren(loading('Searching'));
 		}
 		try {
+			if (!text && nextPage === 0 && store.grades.size < MIN_GRADES) {
+				await showStarterSet(mine);
+				return;
+			}
 			const result = await api.searchMovies(text, nextPage, PAGE_SIZE);
 			if (mine !== sequence) {
 				return;
@@ -72,6 +76,21 @@ export function renderGrade(root) {
 				showError(error, 'Search failed');
 			}
 		}
+	}
+
+	/** New users: well-known films spread across genres, so the first grades say a lot about taste. */
+	async function showStarterSet(mine) {
+		const starter = await api.starterSet(15);
+		if (mine !== sequence) {
+			return;
+		}
+		results.replaceChildren();
+		cards.clear();
+		starter.forEach((movie, i) => results.append(reveal(filmCard(movie), i)));
+		const genres = new Set(starter.flatMap((movie) => movie.genres));
+		meta.textContent = `New here? Start with these ${starter.length} well-known films, picked to cover `
+			+ `${genres.size} genres. Grade the ones you remember, or search for any other title.`;
+		more.hidden = true;
 	}
 
 	function filmCard(movie) {
@@ -151,7 +170,7 @@ export function renderGrade(root) {
 
 	const unsubscribe = store.subscribe(renderLedger);
 	renderLedger();
-	search('', 0);
+	(store.ready ?? Promise.resolve()).finally(() => search('', 0));
 	return () => {
 		unsubscribe();
 		clearTimeout(timer);

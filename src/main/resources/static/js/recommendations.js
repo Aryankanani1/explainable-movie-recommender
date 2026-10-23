@@ -1,6 +1,7 @@
 // View 2 · Recommendations: the ranked programme, with why each film is on it.
 
 import { api } from './api.js';
+import { MIN_GRADES, store } from './store.js';
 import { empty, fixed, genreChips, grade, h, loading, remember, reveal, segmented, select, showError, signed } from './ui.js';
 
 export const METHODS = [
@@ -18,9 +19,15 @@ export const METHOD_NOTES = {
 export function renderRecommendations(root) {
 	let method = METHOD_NOTES[remember.get('recsys.method')] ? remember.get('recsys.method') : 'improved';
 	let k = [5, 10, 20].includes(Number(remember.get('recsys.k'))) ? Number(remember.get('recsys.k')) : 10;
+	let lambda = clampLambda(Number(remember.get('recsys.lambda', '1')));
 	let sequence = 0;
 
 	const note = h('p', { class: 'method-note', text: METHOD_NOTES[method] });
+	const diversity = diversityField(lambda, (value) => {
+		lambda = value;
+		remember.set('recsys.lambda', String(value));
+		load();
+	});
 	const list = h('div');
 
 	root.append(
@@ -41,6 +48,7 @@ export function renderRecommendations(root) {
 				remember.set('recsys.k', String(value));
 				load();
 			}),
+			diversity,
 			note),
 		list);
 
@@ -48,9 +56,9 @@ export function renderRecommendations(root) {
 		const mine = ++sequence;
 		list.replaceChildren(loading('Ranking 9,742 films'));
 		try {
-			const result = await api.recommendations(method, k);
+			const result = await api.recommendations(method, k, lambda);
 			if (mine === sequence) {
-				list.replaceChildren(programme(result, method));
+				list.replaceChildren(programme(result, method, lambda));
 			}
 		} catch (error) {
 			if (mine === sequence) {
@@ -66,13 +74,52 @@ export function renderRecommendations(root) {
 	};
 }
 
-function programme(result, method) {
+/**
+ * The diversity slider runs from 0 (ranked by fit only) to 1 (as varied as possible); MMR's λ is its complement, so
+ * λ = 1 means no re-ranking.
+ */
+function diversityField(lambda, onChange) {
+	const value = h('output', { class: 'slider__value', for: 'diversity' });
+	const describe = (l) => {
+		const text = l >= 1 ? 'off, ranked by fit only' : l >= 0.7 ? 'a little variety' : l >= 0.4 ? 'more variety'
+			: 'lots of variety';
+		value.textContent = `λ = ${l.toFixed(1)} · ${text}`;
+	};
+	const slider = h('input', {
+		type: 'range',
+		id: 'diversity',
+		class: 'slider',
+		min: '0',
+		max: '1',
+		step: '0.1',
+		value: String(1 - lambda),
+		'aria-describedby': 'diversity-value',
+		oninput: () => describe(clampLambda(1 - Number(slider.value))),
+		onchange: () => onChange(clampLambda(1 - Number(slider.value))),
+	});
+	value.id = 'diversity-value';
+	describe(lambda);
+	return h('div', { class: 'field' }, h('label', { class: 'field__label', for: 'diversity', text: 'Diversity' }), slider,
+		value);
+}
+
+function clampLambda(value) {
+	return Number.isFinite(value) ? Math.round(Math.min(1, Math.max(0, value)) * 10) / 10 : 1;
+}
+
+function programme(result, method, lambda) {
 	const fallback = result.fallback === 'POPULARITY';
+	const graded = store.grades.size;
 	return h('div', {},
 		fallback && h('div', { class: 'banner', role: 'note' },
 			h('strong', { text: 'Intermission: not enough to go on yet' }),
-			h('span', { text: 'Grade a few films first (five is a good start). Until then, this is simply what '
-				+ 'MovieLens viewers rated most.' })),
+			h('span', { text: `You have graded ${graded} of the ${MIN_GRADES} films needed for a personal list. Until `
+				+ 'then, this is simply what MovieLens viewers rated most.' }),
+			h('a', { href: '#grade', text: 'Grade a few films →' })),
+		lambda < 1 && result.items.length > 1 && h('p', { class: 'mmr-note' },
+			h('strong', { text: `Re-ranked for variety (MMR, λ = ${lambda.toFixed(1)}). ` }),
+			'Each pick is penalized for sharing genres with the films above it, so scores are no longer in order: '
+			+ 'they still show how well each film fits your taste.'),
 		result.items.length === 0
 			? empty('Nothing left to recommend', 'You have graded every film that qualifies.')
 			: h('ol', { class: 'programme', 'aria-label': `Recommendations, ${method} method` },
