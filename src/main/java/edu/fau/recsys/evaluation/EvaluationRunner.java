@@ -68,6 +68,8 @@ public final class EvaluationRunner {
 		compare(comparisons, byId.get("cb-idf"), byId.get("lecture"));
 		compare(comparisons, byId.get("cb-idf"), byId.get("cb-centered"));
 		compare(comparisons, byId.get("cb-tags"), byId.get("cb-idf"));
+		compare(comparisons, byId.get("cb-tags-mmr"), byId.get("cb-tags"));
+		compare(comparisons, byId.get("cb-idf-mmr"), byId.get("cb-idf"));
 		compare(comparisons, byId.get("popularity"), byId.get("cb-idf"));
 
 		String dataLine = String.format(Locale.ROOT,
@@ -139,6 +141,8 @@ public final class EvaluationRunner {
 		info.put("betaGrid", beta.grid());
 		info.put("betaValidationNdcg", beta.validationNdcg());
 		info.put("betaChosen", beta.chosen());
+		info.put("mmrLambda", MethodRegistry.MMR_LAMBDA);
+		info.put("mmrPool", Evaluator.MMR_POOL);
 		info.put("bootstrapResamples", BOOTSTRAP_RESAMPLES);
 		info.put("gitCommit", gitCommit());
 		info.put("timestamp", Instant.now().toString());

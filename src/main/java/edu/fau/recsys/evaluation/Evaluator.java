@@ -9,6 +9,7 @@ import java.util.TreeMap;
 
 import edu.fau.recsys.dataset.MovieLensRating;
 import edu.fau.recsys.engine.CatalogSnapshot;
+import edu.fau.recsys.engine.MmrReranker;
 import edu.fau.recsys.engine.RatingScale;
 import edu.fau.recsys.engine.RecommendOptions;
 import edu.fau.recsys.engine.Recommendation;
@@ -20,6 +21,11 @@ import edu.fau.recsys.engine.UserRatings;
  * {@code relevanceThreshold}.
  */
 final class Evaluator {
+
+	/** Candidates MMR re-ranks (ALGORITHMS.md §6, M), the same default as the app. */
+	static final int MMR_POOL = 100;
+
+	private final MmrReranker mmr = new MmrReranker();
 
 	private final CatalogSnapshot catalog;
 
@@ -38,7 +44,7 @@ final class Evaluator {
 
 	MethodResult run(EvaluatedMethod method) {
 		long start = System.nanoTime();
-		RecommendOptions options = new RecommendOptions(k, 0, 1.0, false);
+		RecommendOptions options = new RecommendOptions(k, 0, method.mmrLambda(), false);
 		int users = splits.size();
 
 		double precision = 0;
@@ -53,9 +59,8 @@ final class Evaluator {
 
 		for (UserSplit split : splits) {
 			List<Integer> top = new ArrayList<>();
-			for (Recommendation item : method.forUser()
-				.apply(split.userId())
-				.recommend(catalog, userRatings(split.train()), options)
+			for (Recommendation item : mmr
+				.diversify(method.forUser().apply(split.userId()), catalog, userRatings(split.train()), options, MMR_POOL)
 				.items()) {
 				top.add(item.movieId());
 			}
